@@ -1,0 +1,34 @@
+# dependencies
+node_modules
+.pnp
+.pnp.js
+
+# next
+.next
+out
+
+# env and secrets
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
+
+# vercel
+.vercel
+
+# tests / coverage
+coverage
+
+# typescript
+*.tsbuildinfo
+
+# os / ide
+.DS_Store
+Thumbs.db
+.idea
+.vscode
+
+# gcp
+.gcloud

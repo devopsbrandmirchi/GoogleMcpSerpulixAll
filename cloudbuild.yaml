@@ -1,0 +1,49 @@
+# Cloud Build → Artifact Registry → Cloud Run
+# This service only. Do not reuse V1/V2/V3 service or image names.
+# Usage:
+#   gcloud builds submit --config cloudbuild.yaml --substitutions=_REGION=us-central1
+substitutions:
+  _REGION: us-central1
+  _SERVICE: google-mcp-serpulix-all
+  _REPOSITORY: google-mcp-serpulix-all
+
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -t
+      - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_SERVICE}:${COMMIT_SHA}
+      - -t
+      - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_SERVICE}:latest
+      - .
+
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - --all-tags
+      - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_SERVICE}
+
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - ${_SERVICE}
+      - --image=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_SERVICE}:${COMMIT_SHA}
+      - --region=${_REGION}
+      - --platform=managed
+      - --allow-unauthenticated
+      - --port=8080
+      - --memory=1Gi
+      - --cpu=1
+      - --timeout=60
+      - --concurrency=20
+      - --min-instances=0
+      - --max-instances=3
+
+images:
+  - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_SERVICE}:${COMMIT_SHA}
+  - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_SERVICE}:latest
+
+options:
+  logging: CLOUD_LOGGING_ONLY
