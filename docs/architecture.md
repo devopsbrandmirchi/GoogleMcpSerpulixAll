@@ -40,3 +40,5 @@ flowchart TB
 - `src/store` — Firestore + in-memory `AppStore`
 
 DV360 reporting (Bid Manager / spend) is not implemented. Discovery tools reuse operator identity, Google connections, OAuth, encryption, resolver, MCP auth, and logging.
+
+Google Ads additionally exposes opt-in `ads_create_campaign`, which atomically creates a dedicated budget and PAUSED Search campaign through the same connection routing. Writes are disabled by default. See [campaign creation](campaign-creation.md).

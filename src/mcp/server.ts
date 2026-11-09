@@ -69,7 +69,7 @@ function createInnerHandler() {
         version: APP_VERSION,
       },
       instructions:
-        "This is a True Model B Google Marketing connector. Identify the operator with google_get_operator, list Google connections with google_connections_list, then use ga4_* tools for Analytics, ads_* tools for Google Ads, and dv360_* tools for Display & Video 360. The server routes each GA4 property, Ads customer, and DV360 advertiser to the Google connection that owns it. Never invent resource IDs. Google Ads and DV360 are read-only. If a connection is missing the DV360 scope, reconnect it with google_connections_start.",
+        "This is a True Model B Google Marketing connector. Identify the operator with google_get_operator, list Google connections with google_connections_list, then use ga4_* tools for Analytics, ads_* tools for Google Ads, and dv360_* tools for Display & Video 360. The server routes each resource to the Google connection that owns it. Never invent resource IDs. DV360 is read-only. Google Ads queries are read-only; ads_create_campaign can create a paused Search campaign and budget when server write settings allow it. Always validate first, show the plan, and obtain explicit user approval before creation. Never automatically retry creation after an ambiguous timeout. If a connection is missing the DV360 scope, reconnect it with google_connections_start.",
       onEvent: (event) => {
         if (event.type === "ERROR") {
           logger.error("MCP handler error", {

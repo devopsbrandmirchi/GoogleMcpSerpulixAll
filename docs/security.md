@@ -6,7 +6,7 @@
 - Browser cannot supply `operatorId` on the Google callback
 - No refresh tokens, developer token, or cookies in logs
 - Safe MCP errors: `{ error, message }` only
-- Google Ads and DV360 are read-only
+- DV360 and Google Ads query tools are read-only. Opt-in `ads_create_campaign` creates only paused Search campaigns and dedicated budgets, with a customer allowlist, configured budget limit, validation default, and confirmation flag. See [campaign creation](campaign-creation.md).
 - Named Firestore database isolation from V1/V3
 
 Required secrets (never commit):

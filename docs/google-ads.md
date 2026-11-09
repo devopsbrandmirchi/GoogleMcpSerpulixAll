@@ -35,3 +35,5 @@ Customer IDs are normalized by stripping hyphens (`123-456-7890` → `1234567890
 `ads_list_accessible_accounts`, `ads_get_account_hierarchy`, `ads_get_account`, `ads_run_query`, `ads_campaigns`, `ads_ad_groups`, `ads_ads`, `ads_campaign_performance`.
 
 `ads_run_query` accepts SELECT GAQL only. Mutations are rejected.
+
+`ads_create_campaign` is a separate, opt-in mutation tool that creates a PAUSED Search campaign and its dedicated budget atomically. See [campaign creation](campaign-creation.md) for environment settings, deployment, and testing prompts. It defaults to validation only and requires explicit confirmation to execute.

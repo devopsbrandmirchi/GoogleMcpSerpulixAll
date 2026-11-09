@@ -1,5 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
+import { createCampaignSchema, createSearchCampaign } from "@/products/google-ads/api/create-campaign";
 import { toToolErrorText } from "@/lib/errors";
 import { loadCurrentOperator } from "@/products/ga4/routing";
 import {
@@ -45,6 +46,22 @@ async function runResolvedQuery(params: {
 }
 
 export function registerAdsTools(server: McpServer): void {
+  server.registerTool(
+    "ads_create_campaign",
+    {
+      title: "Create paused Google Ads Search campaign and budget",
+      description: "Creates a PAUSED Search campaign with a new dedicated budget atomically. Disabled unless server write settings allow this customer and budget. dailyBudgetMicros is in account currency (1000000 = one currency unit). Defaults to validateOnly=true, which saves nothing. Show the validated plan to the user and obtain explicit approval before calling with validateOnly=false and confirm=true. Ask the user for the EU political advertising declaration. Does not create ads, keywords, ad groups, or targeting. Never automatically retry a creation after a timeout; check campaigns first.",
+      inputSchema: createCampaignSchema,
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+    },
+    async (input) => {
+      try {
+        return jsonToolResult(await createSearchCampaign(input));
+      } catch (error) {
+        return { content: [{ type: "text", text: toToolErrorText(error) }], isError: true };
+      }
+    },
+  );
   server.registerTool(
     "ads_list_accessible_accounts",
     {
