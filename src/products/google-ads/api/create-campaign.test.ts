@@ -47,6 +47,22 @@ describe("campaign creation", () => {
     expect(resolveAdsAccessContext).not.toHaveBeenCalled();
     expect(adsRequest).not.toHaveBeenCalled();
   });
+  it.each(["*", " * ", "9876543210,*"])("allows any customer with GOOGLE_ADS_WRITE_CUSTOMER_IDS=%s", async (value) => {
+    vi.stubEnv("GOOGLE_ADS_WRITE_CUSTOMER_IDS", value);
+    expect(await createSearchCampaign(input)).toMatchObject({ validated: true, created: false });
+    expect(resolveAdsAccessContext).toHaveBeenCalledWith("1234567890", undefined);
+  });
+  it("still enforces the budget limit with the wildcard", async () => {
+    vi.stubEnv("GOOGLE_ADS_WRITE_CUSTOMER_IDS", "*");
+    vi.stubEnv("GOOGLE_ADS_MAX_DAILY_BUDGET_MICROS", "999999");
+    await expect(createSearchCampaign(input)).rejects.toThrow("exceeds");
+    expect(adsRequest).not.toHaveBeenCalled();
+  });
+  it("blocks writes when the allowlist is empty", async () => {
+    vi.stubEnv("GOOGLE_ADS_WRITE_CUSTOMER_IDS", "");
+    await expect(createSearchCampaign(input)).rejects.toThrow("GOOGLE_ADS_WRITE_CUSTOMER_IDS");
+    expect(resolveAdsAccessContext).not.toHaveBeenCalled();
+  });
   it("requires confirmation for execution", async () => {
     await expect(createSearchCampaign({ ...input, validateOnly: false })).rejects.toThrow("approval");
     expect(adsRequest).not.toHaveBeenCalled();

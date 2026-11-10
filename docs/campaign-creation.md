@@ -16,7 +16,7 @@ GOOGLE_ADS_WRITE_CUSTOMER_IDS=1234567890
 GOOGLE_ADS_MAX_DAILY_BUDGET_MICROS=10000000
 ```
 
-Replace the example customer ID. The limit is in micros of the account currency: 1000000 micros = 1 currency unit. This is a limit on the configured average daily budget, not a guaranteed daily spending ceiling. The same numeric limit applies to every allowlisted account regardless of currency. Writes remain disabled by default, including validation.
+Replace the example customer ID. Set `GOOGLE_ADS_WRITE_CUSTOMER_IDS=*` to allow any client account the connected Google user can access; Claude then supplies the customer ID per request. The wildcard removes the server-side account allowlist, so the budget limit, PAUSED status, validation default and confirmation remain the only guardrails. An empty value still blocks all writes. The limit is in micros of the account currency: 1000000 micros = 1 currency unit. This is a limit on the configured average daily budget, not a guaranteed daily spending ceiling. The same numeric limit applies to every allowlisted account regardless of currency. Writes remain disabled by default, including validation.
 
 ## 3. Deploy the updated code
 
@@ -54,7 +54,7 @@ Use the truthful political-advertising declaration for your campaign. Validation
 ## Troubleshooting and rollback
 
 - Tool missing: deploy updated code and refresh Claude's connector tool list.
-- Disabled/not allowlisted/budget error: check the three environment settings on the running revision.
+- Disabled/not allowlisted/budget error: check the three environment settings on the running revision. `*` allows any accessible client account.
 - 403 from Google: check Google user edit rights, developer token, project access, permissible use, and MCC access to the client.
 - Validation errors: correct the Google-reported fields; the current tool supports only basic Search/Manual CPC creation.
 - Timeout during execution: inspect campaigns before retrying. The API call is not idempotent and a timed-out request might have succeeded.

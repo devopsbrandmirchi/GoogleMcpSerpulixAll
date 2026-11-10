@@ -25,9 +25,11 @@ export async function createSearchCampaign(raw: z.input<typeof createCampaignSch
   if (process.env.GOOGLE_ADS_WRITES_ENABLED !== "true") {
     throw new AppError("Google Ads creation is disabled. Set GOOGLE_ADS_WRITES_ENABLED=true.", "configuration_error", 403);
   }
-  const allowed = (process.env.GOOGLE_ADS_WRITE_CUSTOMER_IDS ?? "")
-    .split(",").map((id) => id.trim()).filter(Boolean).map(normalizeCustomerId);
-  if (!allowed.includes(customerId)) {
+  const entries = (process.env.GOOGLE_ADS_WRITE_CUSTOMER_IDS ?? "")
+    .split(",").map((id) => id.trim()).filter(Boolean);
+  const allowAny = entries.includes("*");
+  const allowed = entries.filter((id) => id !== "*").map(normalizeCustomerId);
+  if (!allowAny && !allowed.includes(customerId)) {
     throw new AppError("Customer is not in GOOGLE_ADS_WRITE_CUSTOMER_IDS.", "resource_not_accessible", 403);
   }
   const maximum = process.env.GOOGLE_ADS_MAX_DAILY_BUDGET_MICROS ?? "";
