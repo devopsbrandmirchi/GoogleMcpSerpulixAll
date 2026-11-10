@@ -12,6 +12,7 @@ import {
 } from "@/mcp/http";
 import { wwwAuthenticateHeader } from "@/mcp/oauth/metadata";
 import { registerAdsTools } from "@/mcp/tools/ads";
+import { registerAdsWriteTools } from "@/mcp/tools/ads-write";
 import { registerDv360Tools } from "@/mcp/tools/dv360";
 import { registerDisconnectConnectionTool } from "@/mcp/tools/disconnect-connection";
 import { registerGetActivePropertyTool } from "@/mcp/tools/get-active-property";
@@ -61,6 +62,7 @@ function createInnerHandler() {
       registerRunReportTool(server);
       registerRealtimeTool(server);
       registerAdsTools(server);
+      registerAdsWriteTools(server);
       registerDv360Tools(server);
     },
     {
@@ -69,7 +71,7 @@ function createInnerHandler() {
         version: APP_VERSION,
       },
       instructions:
-        "This is a True Model B Google Marketing connector. Identify the operator with google_get_operator, list Google connections with google_connections_list, then use ga4_* tools for Analytics, ads_* tools for Google Ads, and dv360_* tools for Display & Video 360. The server routes each resource to the Google connection that owns it. Never invent resource IDs. DV360 is read-only. Google Ads queries are read-only; ads_create_campaign can create a paused Search campaign and budget when server write settings allow it. Always validate first, show the plan, and obtain explicit user approval before creation. Never automatically retry creation after an ambiguous timeout. If a connection is missing the DV360 scope, reconnect it with google_connections_start.",
+        "This is a True Model B Google Marketing connector. Identify the operator with google_get_operator, list Google connections with google_connections_list, then use ga4_* tools for Analytics, ads_* tools for Google Ads, and dv360_* tools for Display & Video 360. The server routes each resource to the Google connection that owns it. Never invent resource IDs. DV360 is read-only. Google Ads reads use ads_run_query and the listing tools. When server write settings allow it, Google Ads can be edited with ads_mutate (any create or update operation) and typed tools: ads_create_campaign (Search), ads_create_demand_gen_campaign (YouTube), ads_create_asset, ads_create_ad_group, ads_add_keywords, ads_create_responsive_search_ad, ads_set_status, ads_update_budget and ads_set_targeting. Nothing can be deleted: pause budgets, campaigns, ad groups, ads, keywords and assets instead; only targeting criteria and links can be removed. New campaigns are always PAUSED. YouTube campaigns are built as Demand Gen because classic Video campaigns cannot be created or edited through the API. For every write, validate first, show the plan, and obtain explicit user approval before calling again with validateOnly=false and confirm=true. Never automatically retry a write after an ambiguous timeout. If a connection is missing the DV360 scope, reconnect it with google_connections_start.",
       onEvent: (event) => {
         if (event.type === "ERROR") {
           logger.error("MCP handler error", {

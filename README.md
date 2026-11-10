@@ -71,7 +71,7 @@ Claude Custom Connector URL is `http://localhost:3000/mcp`. Health is `GET /heal
 
 ## Google Ads
 
-Uses official Google Ads REST **v25**. Reporting is read-only. Opt-in `ads_create_campaign` creates a paused Search campaign and budget with validation mode, a customer allowlist, and a budget limit. See [campaign creation setup](docs/campaign-creation.md). The app developer token is an application secret (`GOOGLE_ADS_DEVELOPER_TOKEN`), never a user OAuth credential.
+Uses official Google Ads REST **v25**. Opt-in writes can create and edit campaigns (Search, Demand Gen for YouTube, Performance Max and others), budgets, ad groups, keywords, ads, assets and targeting, but never delete them; pause instead. Every write validates first, needs explicit confirmation, creates campaigns PAUSED, and is limited by a customer allowlist and budget caps. See [Google Ads writes](docs/campaign-creation.md). The app developer token is an application secret (`GOOGLE_ADS_DEVELOPER_TOKEN`), never a user OAuth credential.
 
 The server resolves `login-customer-id` from discovered MCC hierarchy. Hyphenated customer IDs are normalized before API use.
 
