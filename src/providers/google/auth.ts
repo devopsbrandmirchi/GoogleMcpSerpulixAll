@@ -5,8 +5,9 @@ import {
   DV360_SCOPE,
   GA4_READONLY_SCOPE,
   GOOGLE_ADS_SCOPE,
-  GOOGLE_OPENID_SCOPES,
   getConfig,
+  googleOAuthScopes,
+  isDv360Enabled,
 } from "@/lib/config";
 import { logger } from "@/lib/logger";
 import { decryptRefreshToken, encryptRefreshToken } from "@/lib/crypto";
@@ -107,7 +108,7 @@ export function buildGoogleAuthUrl(params: {
   return client.generateAuthUrl({
     access_type: "offline",
     prompt: "consent select_account",
-    scope: [...GOOGLE_OPENID_SCOPES],
+    scope: googleOAuthScopes(),
     include_granted_scopes: false,
     state: params.state,
     code_challenge: params.codeChallenge,
@@ -172,7 +173,7 @@ export function parseGrantedScopes(scope?: string | null): string[] {
     .split(/\s+/)
     .map((item) => item.trim())
     .filter(Boolean);
-  return granted.length > 0 ? [...new Set(granted)] : [...GOOGLE_OPENID_SCOPES];
+  return granted.length > 0 ? [...new Set(granted)] : googleOAuthScopes();
 }
 
 export function connectionHasScope(connection: GoogleConnectionRecord, scope: string): boolean {
@@ -189,7 +190,7 @@ export function connectionProducts(
   if (connectionHasScope(connection, GOOGLE_ADS_SCOPE)) {
     products.push("Google Ads");
   }
-  if (connectionHasScope(connection, DV360_SCOPE)) {
+  if (isDv360Enabled() && connectionHasScope(connection, DV360_SCOPE)) {
     products.push("DV360");
   }
   return products;
@@ -336,7 +337,7 @@ export function clearAccessTokenCache(connectionId?: string): void {
 }
 
 export function connectionScopes(): string[] {
-  return [...GOOGLE_OPENID_SCOPES];
+  return googleOAuthScopes();
 }
 
 export { DV360_SCOPE, GA4_READONLY_SCOPE, GOOGLE_ADS_SCOPE };

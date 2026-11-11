@@ -2,6 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { publicConnectionView } from "@/providers/google/auth";
 import { loadCurrentOperator } from "@/products/ga4/routing";
+import { isDv360Enabled } from "@/lib/config";
 import { toToolErrorText } from "@/lib/errors";
 import { jsonToolResult } from "@/mcp/tools/schemas";
 import { getAppStore } from "@/store/app-store";
@@ -11,8 +12,7 @@ export function registerListConnectionsTool(server: McpServer): void {
     "google_connections_list",
     {
       title: "List Google connections",
-      description:
-        "Lists Google OAuth connections owned by the authenticated MCP operator, including which products (GA4, Google Ads, DV360) each connection authorized. Never returns tokens.",
+      description: `Lists Google OAuth connections owned by the authenticated MCP operator, including which products (GA4, Google Ads${isDv360Enabled() ? ", DV360" : ""}) each connection authorized. Never returns tokens.`,
       inputSchema: z.object({}),
     },
     async () => {

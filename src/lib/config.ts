@@ -7,13 +7,19 @@ export const GOOGLE_ADS_SCOPE = "https://www.googleapis.com/auth/adwords";
 
 export const DV360_SCOPE = "https://www.googleapis.com/auth/display-video";
 
-export const GOOGLE_OPENID_SCOPES = [
-  "openid",
-  "email",
-  GA4_READONLY_SCOPE,
-  GOOGLE_ADS_SCOPE,
-  DV360_SCOPE,
-] as const;
+export function isDv360Enabled(): boolean {
+  return process.env.DV360_ENABLED === "true";
+}
+
+export function googleOAuthScopes(): string[] {
+  return [
+    "openid",
+    "email",
+    GA4_READONLY_SCOPE,
+    GOOGLE_ADS_SCOPE,
+    ...(isDv360Enabled() ? [DV360_SCOPE] : []),
+  ];
+}
 
 export const DEFAULT_FIRESTORE_DATABASE_ID = "google-mcp-serpulix-all";
 

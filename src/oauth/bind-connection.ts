@@ -3,7 +3,7 @@ import { persistDiscoveredGa4Resources } from "@/products/ga4/routing";
 import { persistDiscoveredAdsResources } from "@/products/google-ads/routing";
 import { persistDiscoveredDv360Resources } from "@/products/dv360/routing";
 import { encryptRefreshToken } from "@/lib/crypto";
-import { DV360_SCOPE, GA4_READONLY_SCOPE, GOOGLE_ADS_SCOPE } from "@/lib/config";
+import { DV360_SCOPE, GA4_READONLY_SCOPE, GOOGLE_ADS_SCOPE, isDv360Enabled } from "@/lib/config";
 import { logger } from "@/lib/logger";
 import { getAppStore } from "@/store/app-store";
 import type { GoogleConnectionRecord, OperatorRecord } from "@/store/types";
@@ -63,7 +63,7 @@ export async function bindGoogleIdentityToOperator(params: {
         });
       }
     }
-    if (connection.scopes.includes(DV360_SCOPE)) {
+    if (isDv360Enabled() && connection.scopes.includes(DV360_SCOPE)) {
       try {
         await persistDiscoveredDv360Resources(params.operatorId, connection.connectionId, client);
       } catch (error) {

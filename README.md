@@ -79,6 +79,8 @@ See [docs/google-ads.md](docs/google-ads.md), [docs/ga4.md](docs/ga4.md), and [d
 
 ## Display & Video 360
 
+**Currently hidden.** DV360 is off unless `DV360_ENABLED=true`. While it's off, the connector doesn't request the `display-video` scope, doesn't register `dv360_*` tools and skips DV360 discovery; the code and stored data remain. After enabling it, users must reconnect their Google connections to grant the scope.
+
 Uses official Display & Video 360 REST **v4**. Read-only discovery in this phase. Existing Google connections must reconnect to grant `https://www.googleapis.com/auth/display-video`. No extra secrets.
 
 ## Deployment

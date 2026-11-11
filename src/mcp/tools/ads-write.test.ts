@@ -65,6 +65,15 @@ describe("Google Ads write tools over MCP", () => {
     }
   });
 
+  it("hides DV360 tools unless DV360_ENABLED=true", async () => {
+    const dv360Tools = async () => ((await rpc("tools/list")).result?.tools as Array<{ name: string }>)
+      .filter((tool) => tool.name.startsWith("dv360_"))
+      .map((tool) => tool.name);
+    expect(await dv360Tools()).toEqual([]);
+    vi.stubEnv("DV360_ENABLED", "true");
+    expect(await dv360Tools()).toHaveLength(7);
+  });
+
   it("rejects deleting a campaign before any Google call", async () => {
     const body = await rpc("tools/call", {
       name: "ads_mutate",

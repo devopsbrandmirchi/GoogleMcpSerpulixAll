@@ -1,5 +1,5 @@
 import { createMcpHandler } from "mcp-handler";
-import { APP_VERSION } from "@/lib/config";
+import { APP_VERSION, isDv360Enabled } from "@/lib/config";
 import { logger } from "@/lib/logger";
 import { createRequestId, runWithOperator } from "@/lib/request-context";
 import { extractMcpToken, tryReadAccessToken } from "@/mcp/auth";
@@ -47,7 +47,20 @@ export function unauthorizedMcpResponse(): Response {
   );
 }
 
+function serverInstructions(dv360: boolean): string {
+  return [
+    `This is a True Model B Google Marketing connector. Identify the operator with google_get_operator, list Google connections with google_connections_list, then use ga4_* tools for Analytics${dv360 ? ", ads_* tools for Google Ads, and dv360_* tools for Display & Video 360" : " and ads_* tools for Google Ads"}.`,
+    "The server routes each resource to the Google connection that owns it. Never invent resource IDs.",
+    dv360 ? "DV360 is read-only." : "",
+    "Google Ads reads use ads_run_query and the listing tools. When server write settings allow it, Google Ads can be edited with ads_mutate (any create or update operation) and typed tools: ads_create_campaign (Search), ads_create_demand_gen_campaign (YouTube), ads_create_asset, ads_create_ad_group, ads_add_keywords, ads_create_responsive_search_ad, ads_set_status, ads_update_budget and ads_set_targeting.",
+    "Nothing can be deleted: pause budgets, campaigns, ad groups, ads, keywords and assets instead; only targeting criteria and links can be removed. New campaigns are always PAUSED. YouTube campaigns are built as Demand Gen because classic Video campaigns cannot be created or edited through the API.",
+    "For every write, validate first, show the plan, and obtain explicit user approval before calling again with validateOnly=false and confirm=true. Never automatically retry a write after an ambiguous timeout.",
+    dv360 ? "If a connection is missing the DV360 scope, reconnect it with google_connections_start." : "",
+  ].filter(Boolean).join(" ");
+}
+
 function createInnerHandler() {
+  const dv360 = isDv360Enabled();
   return createMcpHandler(
     (server) => {
       registerGetOperatorTool(server);
@@ -63,15 +76,16 @@ function createInnerHandler() {
       registerRealtimeTool(server);
       registerAdsTools(server);
       registerAdsWriteTools(server);
-      registerDv360Tools(server);
+      if (dv360) {
+        registerDv360Tools(server);
+      }
     },
     {
       serverInfo: {
         name: "google-mcp-serpulix-all",
         version: APP_VERSION,
       },
-      instructions:
-        "This is a True Model B Google Marketing connector. Identify the operator with google_get_operator, list Google connections with google_connections_list, then use ga4_* tools for Analytics, ads_* tools for Google Ads, and dv360_* tools for Display & Video 360. The server routes each resource to the Google connection that owns it. Never invent resource IDs. DV360 is read-only. Google Ads reads use ads_run_query and the listing tools. When server write settings allow it, Google Ads can be edited with ads_mutate (any create or update operation) and typed tools: ads_create_campaign (Search), ads_create_demand_gen_campaign (YouTube), ads_create_asset, ads_create_ad_group, ads_add_keywords, ads_create_responsive_search_ad, ads_set_status, ads_update_budget and ads_set_targeting. Nothing can be deleted: pause budgets, campaigns, ad groups, ads, keywords and assets instead; only targeting criteria and links can be removed. New campaigns are always PAUSED. YouTube campaigns are built as Demand Gen because classic Video campaigns cannot be created or edited through the API. For every write, validate first, show the plan, and obtain explicit user approval before calling again with validateOnly=false and confirm=true. Never automatically retry a write after an ambiguous timeout. If a connection is missing the DV360 scope, reconnect it with google_connections_start.",
+      instructions: serverInstructions(dv360),
       onEvent: (event) => {
         if (event.type === "ERROR") {
           logger.error("MCP handler error", {
