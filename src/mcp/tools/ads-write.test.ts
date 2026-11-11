@@ -65,6 +65,15 @@ describe("Google Ads write tools over MCP", () => {
     }
   });
 
+  it("lists the image upload link and image asset tools", async () => {
+    const tools = (await rpc("tools/list")).result?.tools as Array<{
+      name: string;
+      annotations?: { readOnlyHint?: boolean };
+    }>;
+    expect(tools.find((tool) => tool.name === "ads_create_image_upload_link")?.annotations?.readOnlyHint).toBe(false);
+    expect(tools.find((tool) => tool.name === "ads_list_image_assets")?.annotations?.readOnlyHint).toBe(true);
+  });
+
   it("hides DV360 tools unless DV360_ENABLED=true", async () => {
     const dv360Tools = async () => ((await rpc("tools/list")).result?.tools as Array<{ name: string }>)
       .filter((tool) => tool.name.startsWith("dv360_"))

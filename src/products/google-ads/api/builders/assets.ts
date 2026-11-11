@@ -1,11 +1,8 @@
 import { z } from "zod";
-import { AppError } from "@/lib/errors";
 import type { MutateOperation } from "@/products/google-ads/api/write-policy";
 import { resourceName, writeBaseShape } from "@/products/google-ads/api/builders/common";
-
-export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
-
-const IMAGE_CONTENT_TYPES = new Set(["image/png", "image/jpeg", "image/gif"]);
+import { fetchImage } from "@/products/google-ads/api/image-fetch";
+import { normalizeImage } from "@/products/google-ads/api/images";
 
 export const youtubeVideoIdSchema = z
   .string()
@@ -26,7 +23,7 @@ export const createAssetSchema = z.object({
     }),
     z.object({
       type: z.literal("IMAGE"),
-      imageUrl: z.url({ protocol: /^https$/ }),
+      imageUrl: z.url({ protocol: /^https?$/ }),
       name: z.string().trim().min(1).max(128),
     }),
   ]),
@@ -34,47 +31,13 @@ export const createAssetSchema = z.object({
 
 export type CreateAssetInput = z.output<typeof createAssetSchema>;
 
-function assertPublicHost(url: URL): void {
-  const host = url.hostname.toLowerCase();
-  const isIpLiteral = /^[\d.]+$/.test(host) || host.includes(":") || host.startsWith("[");
-  if (
-    url.protocol !== "https:" ||
-    isIpLiteral ||
-    host === "localhost" ||
-    host.endsWith(".localhost") ||
-    host.endsWith(".internal") ||
-    host.endsWith(".local") ||
-    !host.includes(".")
-  ) {
-    throw new AppError("Image URLs must be public https URLs with a domain name.", "validation", 400);
-  }
-}
-
-export async function fetchImageAsBase64(rawUrl: string): Promise<string> {
-  const url = new URL(rawUrl);
-  assertPublicHost(url);
-  let response: Response;
-  try {
-    response = await fetch(url, { redirect: "error", signal: AbortSignal.timeout(15_000) });
-  } catch {
-    throw new AppError("The image could not be downloaded. Use a direct https link without redirects.", "validation", 400);
-  }
-  if (!response.ok) {
-    throw new AppError(`The image download failed with status ${response.status}.`, "validation", 400);
-  }
-  const contentType = (response.headers.get("content-type") ?? "").split(";")[0]!.trim().toLowerCase();
-  if (!IMAGE_CONTENT_TYPES.has(contentType)) {
-    throw new AppError("Images must be PNG, JPEG or GIF.", "validation", 400);
-  }
-  const declared = Number(response.headers.get("content-length") ?? "0");
-  if (declared > MAX_IMAGE_BYTES) {
-    throw new AppError("Images must be 5 MB or smaller.", "validation", 400);
-  }
-  const bytes = Buffer.from(await response.arrayBuffer());
-  if (bytes.length === 0 || bytes.length > MAX_IMAGE_BYTES) {
-    throw new AppError("Images must be between 1 byte and 5 MB.", "validation", 400);
-  }
-  return bytes.toString("base64");
+export function imageAssetOperation(customerId: string, tempId: number, name: string, data: Buffer): MutateOperation {
+  return { assetOperation: { create: {
+    resourceName: resourceName(customerId, "assets", tempId),
+    name,
+    type: "IMAGE",
+    imageAsset: { data: data.toString("base64") },
+  } } };
 }
 
 export async function buildAsset(customerId: string, input: CreateAssetInput): Promise<MutateOperation[]> {
@@ -90,10 +53,6 @@ export async function buildAsset(customerId: string, input: CreateAssetInput): P
       youtubeVideoAsset: { youtubeVideoId: asset.youtubeVideoId },
     } } }];
   }
-  return [{ assetOperation: { create: {
-    ...base,
-    name: asset.name,
-    type: "IMAGE",
-    imageAsset: { data: await fetchImageAsBase64(asset.imageUrl) },
-  } } }];
+  const image = await normalizeImage(await fetchImage(asset.imageUrl.replace(/^http:/i, "https:")));
+  return [imageAssetOperation(customerId, -1, asset.name, image.data)];
 }

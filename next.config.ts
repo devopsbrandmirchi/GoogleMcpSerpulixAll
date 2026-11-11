@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
     "@google-analytics/data",
     "@google-cloud/firestore",
     "google-auth-library",
+    "sharp",
   ],
   experimental: {
     cpus: 1,

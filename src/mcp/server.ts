@@ -54,6 +54,7 @@ function serverInstructions(dv360: boolean): string {
     dv360 ? "DV360 is read-only." : "",
     "Google Ads reads use ads_run_query and the listing tools. When server write settings allow it, Google Ads can be edited with ads_mutate (any create or update operation) and typed tools: ads_create_campaign (Search), ads_create_demand_gen_campaign (YouTube), ads_create_asset, ads_create_ad_group, ads_add_keywords, ads_create_responsive_search_ad, ads_set_status, ads_update_budget and ads_set_targeting.",
     "Nothing can be deleted: pause budgets, campaigns, ad groups, ads, keywords and assets instead; only targeting criteria and links can be removed. New campaigns are always PAUSED. YouTube campaigns are built as Demand Gen because classic Video campaigns cannot be created or edited through the API.",
+    "For images, use ads_create_asset with a direct image URL, or ads_create_image_upload_link so the user can upload files from their computer, then ads_list_image_assets to get the asset IDs; never type base64 image data. Display ads need a landscape 1.91:1 image (at least 600x314), a square 1:1 image (at least 300x300), and optionally a 1:1 or 4:1 logo.",
     "For every write, validate first, show the plan, and obtain explicit user approval before calling again with validateOnly=false and confirm=true. Never automatically retry a write after an ambiguous timeout.",
     dv360 ? "If a connection is missing the DV360 scope, reconnect it with google_connections_start." : "",
   ].filter(Boolean).join(" ");

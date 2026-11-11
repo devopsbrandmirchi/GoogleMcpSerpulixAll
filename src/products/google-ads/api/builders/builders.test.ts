@@ -1,6 +1,8 @@
+import sharp from "sharp";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { checkMutateOperations } from "@/products/google-ads/api/write-policy";
-import { buildAsset, createAssetSchema, MAX_IMAGE_BYTES } from "./assets";
+import { fetchImage } from "@/products/google-ads/api/image-fetch";
+import { buildAsset, createAssetSchema } from "./assets";
 import { buildDemandGenCampaign, demandGenCampaignSchema } from "./demand-gen";
 import {
   addKeywordsSchema,
@@ -15,6 +17,8 @@ import {
   updateBudgetSchema,
 } from "./entities";
 import { buildTargeting, setTargetingSchema } from "./targeting";
+
+vi.mock("@/products/google-ads/api/image-fetch", () => ({ fetchImage: vi.fn() }));
 
 const C = "1234567890";
 const base = { customerId: C };
@@ -89,41 +93,16 @@ describe("asset builder", () => {
     expect(video[0]!.assetOperation!.create).toMatchObject({ youtubeVideoAsset: { youtubeVideoId: "dQw4w9WgXcQ" } });
   });
 
-  it("downloads images without following redirects", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(new Response(Buffer.from("png"), {
-      headers: { "content-type": "image/png" },
-    }));
-    vi.stubGlobal("fetch", fetchMock);
+  it("downloads, converts WebP to JPEG and builds an image asset", async () => {
+    const webp = await sharp({ create: { width: 600, height: 314, channels: 3, background: "#3366ff" } }).webp().toBuffer();
+    vi.mocked(fetchImage).mockResolvedValue(webp);
     const ops = await buildAsset(C, createAssetSchema.parse({
-      ...base, asset: { type: "IMAGE", imageUrl: "https://cdn.example.com/logo.png", name: "Logo" },
+      ...base, asset: { type: "IMAGE", imageUrl: "http://cdn.example.com/banner.webp", name: "Banner" },
     }));
-    expect(ops[0]!.assetOperation!.create).toMatchObject({ type: "IMAGE", imageAsset: { data: Buffer.from("png").toString("base64") } });
-    expect(fetchMock.mock.calls[0]![1]).toMatchObject({ redirect: "error" });
-  });
-
-  it.each([
-    "https://localhost/logo.png",
-    "https://127.0.0.1/logo.png",
-    "https://metadata.google.internal/logo.png",
-    "https://[::1]/logo.png",
-  ])("refuses non-public image host %s", async (imageUrl) => {
-    vi.stubGlobal("fetch", vi.fn());
-    await expect(buildAsset(C, createAssetSchema.parse({
-      ...base, asset: { type: "IMAGE", imageUrl, name: "Logo" },
-    }))).rejects.toThrow("public https");
-    expect(fetch).not.toHaveBeenCalled();
-  });
-
-  it("refuses non-images and oversized images", async () => {
-    const parse = () => createAssetSchema.parse({
-      ...base, asset: { type: "IMAGE", imageUrl: "https://cdn.example.com/x", name: "X" },
-    });
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("<html>", { headers: { "content-type": "text/html" } })));
-    await expect(buildAsset(C, parse())).rejects.toThrow("PNG");
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("x", {
-      headers: { "content-type": "image/png", "content-length": String(MAX_IMAGE_BYTES + 1) },
-    })));
-    await expect(buildAsset(C, parse())).rejects.toThrow("5 MB");
+    expect(fetchImage).toHaveBeenCalledWith("https://cdn.example.com/banner.webp");
+    const create = ops[0]!.assetOperation!.create as { type: string; name: string; imageAsset: { data: string } };
+    expect(create).toMatchObject({ type: "IMAGE", name: "Banner" });
+    expect((await sharp(Buffer.from(create.imageAsset.data, "base64")).metadata()).format).toBe("jpeg");
   });
 });
 

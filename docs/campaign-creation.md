@@ -9,7 +9,9 @@ The connector can create and edit almost anything in Google Ads, but it never de
 | `ads_mutate` | Any create or update operation the API supports, in REST JSON form, up to 100 per call |
 | `ads_create_campaign` | Budget plus a PAUSED Search campaign with Manual CPC |
 | `ads_create_demand_gen_campaign` | Budget, a PAUSED Demand Gen campaign, an ad group with YouTube channel controls, optional location and language targeting, and an optional video responsive ad |
-| `ads_create_asset` | Text asset, YouTube video asset, or image asset from a public https URL |
+| `ads_create_asset` | Text asset, YouTube video asset, or image asset from a direct image URL |
+| `ads_create_image_upload_link` | Link to a page where the user uploads image files from their computer as image assets |
+| `ads_list_image_assets` | Read-only list of image assets with IDs and dimensions |
 | `ads_create_ad_group` | Search or Display ad group in an existing campaign (PAUSED by default) |
 | `ads_add_keywords` | Positive ad group keywords, or ad group and campaign negative keywords |
 | `ads_create_responsive_search_ad` | Responsive search ad (PAUSED by default) |
@@ -22,6 +24,15 @@ The connector can create and edit almost anything in Google Ads, but it never de
 ## YouTube
 
 Google's API cannot create or edit classic Video campaigns; it can only read them. YouTube ads are therefore built as **Demand Gen** campaigns. Their ad group channel controls can be limited to YouTube in-stream, in-feed and Shorts, and that is the default in `ads_create_demand_gen_campaign`. Videos must already be uploaded to YouTube; pass their 11-character video IDs. The logo must be an existing image asset, which `ads_create_asset` can create from an https URL.
+
+## Images
+
+Claude can't reliably produce base64 image data, and files attached in Claude's chat never reach the connector. Image assets are therefore created in one of two ways:
+
+- **From a URL:** `ads_create_asset` with `type: "IMAGE"` downloads a direct image link. It follows up to 3 redirects, sends browser-style headers, accepts PNG, JPEG, GIF, WebP and AVIF up to 20 MB, and converts WebP and AVIF to PNG (with transparency) or JPEG. Every hop must be https and resolve to a public address. The URL must open the image itself; a link to a web page fails with a clear message. Some websites block automated downloads (403 or 429); use the upload link for those.
+- **Upload link:** `ads_create_image_upload_link` returns a link valid for 30 minutes. The user opens it, picks up to 5 image files from their computer (10 MB each, 30 MB in total), and clicks Upload. The server converts them if needed and creates the image assets immediately in the customer account named in the link; clicking Upload is the approval. The page lists the new asset IDs, dimensions and shape, and `ads_list_image_assets` shows them to Claude.
+
+Responsive display ads need a landscape 1.91:1 marketing image (at least 600x314) and a square 1:1 image (at least 300x300), and can include 1:1 or 4:1 logos. The upload page and conversion report each image's shape so Claude can use it in the right slot. Images are not cropped or resized automatically.
 
 ## Rules enforced on every write
 
